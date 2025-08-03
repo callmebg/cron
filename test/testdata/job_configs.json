@@ -1,0 +1,115 @@
+{
+  "default_config": {
+    "timeout": "5m",
+    "max_retries": 3,
+    "retry_interval": "1s",
+    "allow_overlap": false,
+    "description": "Default job configuration"
+  },
+  "performance_configs": [
+    {
+      "name": "fast_job",
+      "timeout": "100ms",
+      "max_retries": 0,
+      "retry_interval": "0s",
+      "allow_overlap": true,
+      "description": "Fast executing job with no retries"
+    },
+    {
+      "name": "slow_job",
+      "timeout": "30s",
+      "max_retries": 5,
+      "retry_interval": "5s",
+      "allow_overlap": false,
+      "description": "Slow job with multiple retries"
+    },
+    {
+      "name": "critical_job",
+      "timeout": "1m",
+      "max_retries": 10,
+      "retry_interval": "2s",
+      "allow_overlap": false,
+      "description": "Critical job with many retry attempts"
+    }
+  ],
+  "edge_case_configs": [
+    {
+      "name": "zero_timeout",
+      "timeout": "0s",
+      "max_retries": 0,
+      "retry_interval": "0s",
+      "allow_overlap": true,
+      "description": "Job with zero timeout"
+    },
+    {
+      "name": "long_timeout",
+      "timeout": "1h",
+      "max_retries": 1,
+      "retry_interval": "10m",
+      "allow_overlap": false,
+      "description": "Job with very long timeout"
+    },
+    {
+      "name": "many_retries",
+      "timeout": "5s",
+      "max_retries": 100,
+      "retry_interval": "100ms",
+      "allow_overlap": false,
+      "description": "Job with many retry attempts"
+    },
+    {
+      "name": "long_retry_interval",
+      "timeout": "1s",
+      "max_retries": 2,
+      "retry_interval": "1h",
+      "allow_overlap": false,
+      "description": "Job with long retry interval"
+    }
+  ],
+  "concurrency_configs": [
+    {
+      "name": "overlap_allowed",
+      "timeout": "10s",
+      "max_retries": 1,
+      "retry_interval": "1s",
+      "allow_overlap": true,
+      "description": "Job that allows overlapping executions"
+    },
+    {
+      "name": "no_overlap",
+      "timeout": "5s",
+      "max_retries": 2,
+      "retry_interval": "500ms",
+      "allow_overlap": false,
+      "description": "Job that prevents overlapping executions"
+    }
+  ],
+  "monitoring_configs": [
+    {
+      "name": "monitored_job",
+      "timeout": "2s",
+      "max_retries": 3,
+      "retry_interval": "1s",
+      "allow_overlap": false,
+      "monitoring": {
+        "enabled": true,
+        "collect_metrics": true,
+        "log_executions": true
+      },
+      "description": "Job with monitoring enabled"
+    },
+    {
+      "name": "silent_job",
+      "timeout": "1s",
+      "max_retries": 1,
+      "retry_interval": "500ms",
+      "allow_overlap": true,
+      "monitoring": {
+        "enabled": false,
+        "collect_metrics": false,
+        "log_executions": false
+      },
+      "description": "Job with monitoring disabled"
+    }
+  ]
+}

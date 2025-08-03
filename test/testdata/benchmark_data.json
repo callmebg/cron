@@ -1,0 +1,121 @@
+{
+  "parser_benchmarks": [
+    {
+      "name": "simple_expressions",
+      "expressions": [
+        "* * * * *",
+        "0 * * * *",
+        "0 0 * * *",
+        "0 0 * * 0"
+      ],
+      "expected_ops_per_sec": 1000000,
+      "description": "Simple cron expressions parsing performance"
+    },
+    {
+      "name": "complex_expressions",
+      "expressions": [
+        "*/5 9-17 * * 1-5",
+        "0,15,30,45 * * * *",
+        "0 0,12 1 */2 *",
+        "15 2,14 1 * 1-5"
+      ],
+      "expected_ops_per_sec": 500000,
+      "description": "Complex cron expressions parsing performance"
+    },
+    {
+      "name": "alias_expressions",
+      "expressions": [
+        "@yearly",
+        "@monthly",
+        "@weekly",
+        "@daily",
+        "@hourly"
+      ],
+      "expected_ops_per_sec": 800000,
+      "description": "Cron alias expressions parsing performance"
+    }
+  ],
+  "scheduler_benchmarks": [
+    {
+      "name": "job_creation",
+      "job_count": 1000,
+      "expression": "*/1 * * * *",
+      "expected_ops_per_sec": 100000,
+      "description": "Job creation and deletion performance"
+    },
+    {
+      "name": "job_execution",
+      "job_count": 100,
+      "expression": "*/1 * * * *",
+      "execution_time_ms": 10,
+      "expected_throughput": 1000,
+      "description": "Job execution throughput"
+    },
+    {
+      "name": "concurrent_jobs",
+      "job_count": 50,
+      "expression": "*/1 * * * *",
+      "concurrency": 10,
+      "expected_ops_per_sec": 500,
+      "description": "Concurrent job execution performance"
+    }
+  ],
+  "memory_benchmarks": [
+    {
+      "name": "job_memory_usage",
+      "job_counts": [10, 100, 1000, 10000],
+      "expected_memory_per_job_bytes": 1024,
+      "description": "Memory usage per job"
+    },
+    {
+      "name": "schedule_memory_usage",
+      "expression_complexity": ["simple", "medium", "complex"],
+      "expected_memory_bytes": {
+        "simple": 256,
+        "medium": 512,
+        "complex": 1024
+      },
+      "description": "Memory usage for different schedule complexities"
+    }
+  ],
+  "stress_test_scenarios": [
+    {
+      "name": "high_frequency_jobs",
+      "job_count": 1000,
+      "expression": "* * * * * *",
+      "duration_seconds": 60,
+      "description": "High frequency job execution stress test"
+    },
+    {
+      "name": "long_running_jobs",
+      "job_count": 10,
+      "expression": "*/5 * * * *",
+      "job_duration_seconds": 30,
+      "description": "Long running job management"
+    },
+    {
+      "name": "rapid_job_changes",
+      "operations_per_second": 1000,
+      "operations": ["add", "remove", "modify"],
+      "duration_seconds": 30,
+      "description": "Rapid job addition/removal stress test"
+    }
+  ],
+  "performance_targets": {
+    "parser": {
+      "simple_expression_parse_ns": 1000,
+      "complex_expression_parse_ns": 2000,
+      "next_execution_calc_ns": 500
+    },
+    "scheduler": {
+      "job_add_remove_ns": 10000,
+      "job_execution_overhead_ns": 5000,
+      "schedule_check_ns": 1000
+    },
+    "memory": {
+      "max_memory_per_job_bytes": 2048,
+      "max_memory_overhead_percent": 10,
+      "gc_pause_max_ms": 10
+    }
+  }
+}

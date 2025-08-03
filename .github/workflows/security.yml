@@ -1,0 +1,275 @@
+name: Security Scan
+
+on:
+  schedule:
+    # Run security scan daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  GO_VERSION: '1.21'
+
+jobs:
+  vulnerability-scan:
+    name: Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run govulncheck
+      run: |
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...
+
+    - name: Run nancy (dependency vulnerability scanner)
+      run: |
+        go list -json -deps ./... | docker run --rm -i sonatypecommunity/nancy:latest sleuth
+
+  static-analysis:
+    name: Static Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run gosec
+      uses: securecodewarrior/github-action-gosec@master
+      with:
+        args: '-fmt sarif -out gosec.sarif ./...'
+
+    - name: Upload SARIF file
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: gosec.sarif
+
+    - name: Run semgrep
+      uses: returntocorp/semgrep-action@v1
+      with:
+        config: >-
+          p/security-audit
+          p/golang
+          p/cwe-top-25
+
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'go' ]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+        queries: security-extended,security-and-quality
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v2
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: "/language:${{matrix.language}}"
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v3
+      with:
+        fail-on-severity: moderate
+        fail-on-scopes: runtime,development
+        allow-ghsas: |
+          GHSA-xxxx-xxxx-xxxx
+        deny-licenses: |
+          GPL-2.0
+          GPL-3.0
+
+  secrets-scan:
+    name: Secrets Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Run TruffleHog OSS
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --debug --only-verified
+
+    - name: Run gitleaks
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  security-scorecard:
+    name: OSSF Scorecard
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      id-token: write
+      actions: read
+      contents: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+
+    - name: Run analysis
+      uses: ossf/scorecard-action@v2.3.1
+      with:
+        results_file: results.sarif
+        results_format: sarif
+        publish_results: true
+
+    - name: Upload SARIF results to GitHub
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: results.sarif
+
+  fuzz-testing:
+    name: Fuzz Testing
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run fuzz tests
+      run: |
+        # Run fuzz tests for cron expression parsing
+        timeout 300s go test -fuzz=FuzzCronParsing ./internal/parser/ || true
+        
+        # Run fuzz tests for job scheduling
+        timeout 300s go test -fuzz=FuzzJobScheduling ./internal/scheduler/ || true
+        
+        echo "Fuzz testing completed"
+
+  security-report:
+    name: Security Report
+    runs-on: ubuntu-latest
+    needs: [vulnerability-scan, static-analysis, codeql-analysis, secrets-scan]
+    if: always()
+    
+    steps:
+    - name: Generate security summary
+      run: |
+        echo "# Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Vulnerability Scan | ${{ needs.vulnerability-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Static Analysis | ${{ needs.static-analysis.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| CodeQL Analysis | ${{ needs.codeql-analysis.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Secrets Scan | ${{ needs.secrets-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "For detailed results, check the individual job outputs." >> $GITHUB_STEP_SUMMARY
+
+    - name: Create security issue on failure
+      if: |
+        needs.vulnerability-scan.result == 'failure' ||
+        needs.static-analysis.result == 'failure' ||
+        needs.codeql-analysis.result == 'failure' ||
+        needs.secrets-scan.result == 'failure'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const title = `Security scan failed - ${new Date().toISOString().split('T')[0]}`;
+          const body = `
+          ## Security Scan Failure Report
+          
+          **Date**: ${new Date().toISOString()}
+          **Workflow**: ${context.workflow}
+          **Run ID**: ${context.runId}
+          
+          ### Failed Checks:
+          ${context.payload.inputs?.failed_checks || 'See workflow run for details'}
+          
+          ### Action Required:
+          - [ ] Review security scan results
+          - [ ] Address identified vulnerabilities
+          - [ ] Update dependencies if needed
+          - [ ] Re-run security scans
+          
+          **Workflow URL**: ${context.payload.repository.html_url}/actions/runs/${context.runId}
+          `;
+          
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: title,
+            body: body,
+            labels: ['security', 'urgent']
+          });
+
+  notify-security-team:
+    name: Notify Security Team
+    runs-on: ubuntu-latest
+    needs: [security-report]
+    if: |
+      always() && 
+      (needs.vulnerability-scan.result == 'failure' ||
+       needs.static-analysis.result == 'failure' ||
+       needs.codeql-analysis.result == 'failure' ||
+       needs.secrets-scan.result == 'failure')
+    
+    steps:
+    - name: Send notification
+      run: |
+        echo "🚨 Security scan failures detected!"
+        echo "Workflow: ${{ github.workflow }}"
+        echo "Repository: ${{ github.repository }}"
+        echo "Run ID: ${{ github.run_id }}"
+        echo ""
+        echo "Would send notification to security team here:"
+        echo "- Email alerts"
+        echo "- Slack notifications"  
+        echo "- PagerDuty alerts"
+        # Add your actual notification logic here

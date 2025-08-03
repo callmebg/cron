@@ -1,0 +1,311 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  GO_VERSION: '1.21'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  test:
+    name: Pre-release Testing
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run full test suite
+      run: |
+        go test -race -coverprofile=coverage.out ./...
+        go test -race -tags=integration ./test/integration/...
+        go test -bench=. ./test/benchmark/...
+
+    - name: Verify coverage threshold
+      run: |
+        COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+        echo "Coverage: $COVERAGE%"
+        if (( $(echo "$COVERAGE < 90" | bc -l) )); then
+          echo "Coverage $COVERAGE% is below required 90% for release"
+          exit 1
+        fi
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run security scan
+      uses: securecodewarrior/github-action-gosec@master
+      with:
+        args: '-fmt json -out gosec-report.json ./...'
+
+    - name: Check security issues
+      run: |
+        if [ -f gosec-report.json ]; then
+          ISSUES=$(jq '.Issues | length' gosec-report.json)
+          if [ "$ISSUES" -gt 0 ]; then
+            echo "Security issues found: $ISSUES"
+            jq '.Issues' gosec-report.json
+            exit 1
+          fi
+        fi
+
+  build:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+        exclude:
+          - goos: windows
+            goarch: arm64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Get version
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+      run: |
+        mkdir -p dist
+        
+        # Build the example binaries
+        for example in cmd/examples/*/; do
+          if [ -d "$example" ]; then
+            example_name=$(basename "$example")
+            output_name="cron-example-${example_name}-${{ matrix.goos }}-${{ matrix.goarch }}"
+            if [ "${{ matrix.goos }}" = "windows" ]; then
+              output_name="${output_name}.exe"
+            fi
+            
+            echo "Building $example_name for ${{ matrix.goos }}/${{ matrix.goarch }}"
+            go build -o "dist/$output_name" -ldflags="-s -w -X main.Version=${{ steps.version.outputs.VERSION }}" "./$example"
+          fi
+        done
+
+    - name: Create archive
+      run: |
+        cd dist
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          7z a "../cron-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.zip" *
+        else
+          tar -czf "../cron-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz" *
+        fi
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-artifacts
+        path: |
+          *.tar.gz
+          *.zip
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get version
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: release-artifacts
+        path: ./artifacts
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Generate changelog from git commits since last tag
+        PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        if [ -n "$PREV_TAG" ]; then
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "## Changes since $PREV_TAG" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD | head -20 >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "## Initial Release" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "- First stable release of Go Cron library" >> $GITHUB_OUTPUT
+          echo "- Zero dependencies, built with Go standard library only" >> $GITHUB_OUTPUT
+          echo "- Comprehensive monitoring and error handling" >> $GITHUB_OUTPUT
+          echo "- Production-ready with 90%+ test coverage" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.VERSION }}
+        name: Release ${{ steps.version.outputs.VERSION }}
+        body: |
+          # Go Cron ${{ steps.version.outputs.VERSION }}
+          
+          A lightweight, efficient cron job scheduler for Go applications built exclusively with the Go standard library.
+          
+          ${{ steps.changelog.outputs.CHANGELOG }}
+          
+          ## Installation
+          
+          ```bash
+          go get github.com/callmebg/cron@${{ steps.version.outputs.VERSION }}
+          ```
+          
+          ## Verification
+          
+          You can verify the integrity of the downloaded files using checksums:
+          
+          ```bash
+          sha256sum cron-*
+          ```
+          
+          ## Documentation
+          
+          - [README](https://github.com/callmebg/cron/blob/main/README.md)
+          - [中文文档](https://github.com/callmebg/cron/blob/main/README_zh.md)  
+          - [Test Plan](https://github.com/callmebg/cron/blob/main/TEST_PLAN.md)
+          - [Comparison](https://github.com/callmebg/cron/blob/main/COMPARISON.md)
+          
+          ## What's New
+          
+          See the [CHANGELOG](https://github.com/callmebg/cron/blob/main/CHANGELOG.md) for detailed release notes.
+        files: |
+          artifacts/*
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+
+  update-pkg-go-dev:
+    name: Update pkg.go.dev
+    runs-on: ubuntu-latest
+    needs: [create-release]
+    
+    steps:
+    - name: Trigger pkg.go.dev update
+      run: |
+        # Trigger pkg.go.dev to update the module
+        curl -X POST "https://proxy.golang.org/github.com/callmebg/cron/@v/${{ github.ref_name }}.info"
+        echo "Triggered pkg.go.dev update for ${{ github.ref_name }}"
+
+  docker-build:
+    name: Build Docker Examples (Optional)
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: contains(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get version
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Build and push examples
+      run: |
+        # Create example Dockerfiles if they don't exist
+        mkdir -p docker-examples
+        
+        cat > docker-examples/Dockerfile.basic << 'EOF'
+        FROM golang:1.21-alpine AS builder
+        WORKDIR /app
+        COPY . .
+        RUN go mod download
+        RUN go build -o basic-example ./cmd/examples/basic/
+
+        FROM alpine:latest
+        RUN apk --no-cache add ca-certificates tzdata
+        WORKDIR /root/
+        COPY --from=builder /app/basic-example .
+        CMD ["./basic-example"]
+        EOF
+        
+        # Build and push basic example
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          --file docker-examples/Dockerfile.basic \
+          --tag ghcr.io/callmebg/cron-example:${{ steps.version.outputs.VERSION }} \
+          --tag ghcr.io/callmebg/cron-example:latest \
+          --push .
+
+  post-release:
+    name: Post Release Tasks
+    runs-on: ubuntu-latest
+    needs: [create-release]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create next development version
+      run: |
+        echo "Release ${{ github.ref_name }} created successfully!"
+        echo "Don't forget to:"
+        echo "1. Update CHANGELOG.md with release notes"
+        echo "2. Bump version for next development cycle"
+        echo "3. Update documentation if needed"
+        echo "4. Announce the release"
+
+    - name: Notify team (webhook example)
+      run: |
+        # Example webhook notification (replace with your notification system)
+        echo "Would send release notification to team here"
+        # curl -X POST -H 'Content-type: application/json' \
+        #   --data '{"text":"🚀 Go Cron ${{ github.ref_name }} has been released!"}' \
+        #   YOUR_WEBHOOK_URL

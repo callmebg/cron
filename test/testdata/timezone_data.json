@@ -1,0 +1,134 @@
+{
+  "timezones": [
+    {
+      "name": "UTC",
+      "location": "UTC",
+      "offset": "+00:00",
+      "description": "Coordinated Universal Time"
+    },
+    {
+      "name": "US Eastern",
+      "location": "America/New_York",
+      "offset": "-05:00/-04:00",
+      "description": "US Eastern Time (EST/EDT)"
+    },
+    {
+      "name": "US Pacific",
+      "location": "America/Los_Angeles",
+      "offset": "-08:00/-07:00",
+      "description": "US Pacific Time (PST/PDT)"
+    },
+    {
+      "name": "Europe London",
+      "location": "Europe/London",
+      "offset": "+00:00/+01:00",
+      "description": "Greenwich Mean Time / British Summer Time"
+    },
+    {
+      "name": "Europe Paris",
+      "location": "Europe/Paris",
+      "offset": "+01:00/+02:00",
+      "description": "Central European Time / Central European Summer Time"
+    },
+    {
+      "name": "Asia Tokyo",
+      "location": "Asia/Tokyo",
+      "offset": "+09:00",
+      "description": "Japan Standard Time"
+    },
+    {
+      "name": "Asia Shanghai",
+      "location": "Asia/Shanghai",
+      "offset": "+08:00",
+      "description": "China Standard Time"
+    },
+    {
+      "name": "Australia Sydney",
+      "location": "Australia/Sydney",
+      "offset": "+10:00/+11:00",
+      "description": "Australian Eastern Time / Australian Eastern Daylight Time"
+    },
+    {
+      "name": "India",
+      "location": "Asia/Kolkata",
+      "offset": "+05:30",
+      "description": "India Standard Time"
+    }
+  ],
+  "dst_test_cases": [
+    {
+      "timezone": "America/New_York",
+      "spring_forward": {
+        "date": "2024-03-10",
+        "time": "02:00",
+        "description": "Daylight Saving Time begins (spring forward)"
+      },
+      "fall_back": {
+        "date": "2024-11-03",
+        "time": "02:00",
+        "description": "Daylight Saving Time ends (fall back)"
+      }
+    },
+    {
+      "timezone": "Europe/London",
+      "spring_forward": {
+        "date": "2024-03-31",
+        "time": "01:00",
+        "description": "British Summer Time begins"
+      },
+      "fall_back": {
+        "date": "2024-10-27",
+        "time": "02:00",
+        "description": "British Summer Time ends"
+      }
+    }
+  ],
+  "test_scenarios": [
+    {
+      "name": "cross_timezone_scheduling",
+      "description": "Test scheduling jobs across different timezones",
+      "jobs": [
+        {
+          "timezone": "UTC",
+          "expression": "0 12 * * *",
+          "description": "Daily at noon UTC"
+        },
+        {
+          "timezone": "America/New_York",
+          "expression": "0 9 * * 1-5",
+          "description": "Weekdays at 9 AM EST/EDT"
+        },
+        {
+          "timezone": "Asia/Tokyo",
+          "expression": "0 0 * * *",
+          "description": "Daily at midnight JST"
+        }
+      ]
+    },
+    {
+      "name": "dst_transition",
+      "description": "Test job execution during DST transitions",
+      "timezone": "America/New_York",
+      "jobs": [
+        {
+          "expression": "0 2 * * *",
+          "description": "Daily at 2 AM (problematic during DST transition)"
+        },
+        {
+          "expression": "0 3 * * *",
+          "description": "Daily at 3 AM (safe time)"
+        }
+      ]
+    },
+    {
+      "name": "edge_timezones",
+      "description": "Test with unusual timezone offsets",
+      "timezones": [
+        "Pacific/Chatham",
+        "Asia/Kathmandu",
+        "Australia/Adelaide",
+        "America/St_Johns"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "valid_expressions": [
+    {
+      "expression": "* * * * *",
+      "description": "Every minute",
+      "type": "basic"
+    },
+    {
+      "expression": "0 * * * *",
+      "description": "Every hour",
+      "type": "basic"
+    },
+    {
+      "expression": "0 0 * * *",
+      "description": "Every day at midnight",
+      "type": "basic"
+    },
+    {
+      "expression": "0 0 * * 0",
+      "description": "Every Sunday at midnight",
+      "type": "weekly"
+    },
+    {
+      "expression": "0 0 1 * *",
+      "description": "First day of every month",
+      "type": "monthly"
+    },
+    {
+      "expression": "*/5 * * * *",
+      "description": "Every 5 minutes",
+      "type": "interval"
+    },
+    {
+      "expression": "0 */2 * * *",
+      "description": "Every 2 hours",
+      "type": "interval"
+    },
+    {
+      "expression": "15,30,45 * * * *",
+      "description": "At 15, 30, and 45 minutes past the hour",
+      "type": "list"
+    },
+    {
+      "expression": "0 9-17 * * *",
+      "description": "Every hour from 9 AM to 5 PM",
+      "type": "range"
+    },
+    {
+      "expression": "0 9-17 * * 1-5",
+      "description": "Every hour from 9 AM to 5 PM, Monday to Friday",
+      "type": "complex"
+    },
+    {
+      "expression": "0 0,12 1 */2 *",
+      "description": "At midnight and noon on the first day of every other month",
+      "type": "complex"
+    },
+    {
+      "expression": "*/15 0 1 1 *",
+      "description": "Every 15 minutes during the first hour of January 1st",
+      "type": "complex"
+    },
+    {
+      "expression": "@yearly",
+      "description": "Once a year (alias for 0 0 1 1 *)",
+      "type": "alias"
+    },
+    {
+      "expression": "@annually",
+      "description": "Once a year (same as @yearly)",
+      "type": "alias"
+    },
+    {
+      "expression": "@monthly",
+      "description": "Once a month (alias for 0 0 1 * *)",
+      "type": "alias"
+    },
+    {
+      "expression": "@weekly",
+      "description": "Once a week (alias for 0 0 * * 0)",
+      "type": "alias"
+    },
+    {
+      "expression": "@daily",
+      "description": "Once a day (alias for 0 0 * * *)",
+      "type": "alias"
+    },
+    {
+      "expression": "@midnight",
+      "description": "Once a day at midnight (same as @daily)",
+      "type": "alias"
+    },
+    {
+      "expression": "@hourly",
+      "description": "Once an hour (alias for 0 * * * *)",
+      "type": "alias"
+    }
+  ],
+  "invalid_expressions": [
+    {
+      "expression": "",
+      "reason": "Empty expression",
+      "error_type": "empty"
+    },
+    {
+      "expression": "* * *",
+      "reason": "Too few fields",
+      "error_type": "field_count"
+    },
+    {
+      "expression": "* * * * * *",
+      "reason": "Too many fields",
+      "error_type": "field_count"
+    },
+    {
+      "expression": "60 * * * *",
+      "reason": "Invalid minute (60 is out of range 0-59)",
+      "error_type": "range"
+    },
+    {
+      "expression": "* 24 * * *",
+      "reason": "Invalid hour (24 is out of range 0-23)",
+      "error_type": "range"
+    },
+    {
+      "expression": "* * 32 * *",
+      "reason": "Invalid day (32 is out of range 1-31)",
+      "error_type": "range"
+    },
+    {
+      "expression": "* * * 13 *",
+      "reason": "Invalid month (13 is out of range 1-12)",
+      "error_type": "range"
+    },
+    {
+      "expression": "* * * * 7",
+      "reason": "Invalid weekday (7 is out of range 0-6)",
+      "error_type": "range"
+    },
+    {
+      "expression": "*/0 * * * *",
+      "reason": "Invalid step value (0 is not allowed)",
+      "error_type": "step"
+    },
+    {
+      "expression": "*/-1 * * * *",
+      "reason": "Invalid step value (negative not allowed)",
+      "error_type": "step"
+    },
+    {
+      "expression": "*/abc * * * *",
+      "reason": "Invalid step value (non-numeric)",
+      "error_type": "step"
+    },
+    {
+      "expression": "60-70 * * * *",
+      "reason": "Invalid range (values out of bounds)",
+      "error_type": "range"
+    },
+    {
+      "expression": "10-5 * * * *",
+      "reason": "Invalid range (start > end)",
+      "error_type": "range"
+    },
+    {
+      "expression": "a * * * *",
+      "reason": "Invalid character",
+      "error_type": "character"
+    },
+    {
+      "expression": "* * * * * 2025",
+      "reason": "Year field not supported",
+      "error_type": "unsupported"
+    },
+    {
+      "expression": "@invalid",
+      "reason": "Invalid alias",
+      "error_type": "alias"
+    }
+  ],
+  "edge_cases": [
+    {
+      "expression": "0 0 29 2 *",
+      "description": "February 29th (leap year consideration)",
+      "type": "leap_year"
+    },
+    {
+      "expression": "0 0 31 4 *",
+      "description": "April 31st (month with 30 days)",
+      "type": "month_days"
+    },
+    {
+      "expression": "59 23 31 12 6",
+      "description": "Last minute of year on Saturday",
+      "type": "boundary"
+    },
+    {
+      "expression": "0 0 1 1 1",
+      "description": "January 1st on Monday",
+      "type": "boundary"
+    }
+  ]
+}

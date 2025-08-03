@@ -1,0 +1,270 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  GO_VERSION: '1.21'
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ['1.19', '1.20', '1.21', '1.22', '1.23']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ matrix.go-version }}-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Verify dependencies
+      run: go mod verify
+
+    - name: Run go vet
+      run: go vet ./...
+
+    - name: Run go fmt
+      run: |
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "The following files are not formatted:"
+          gofmt -s -l .
+          exit 1
+        fi
+
+    - name: Run tests
+      run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+
+    - name: Run integration tests
+      run: go test -race -tags=integration ./test/integration/...
+
+    - name: Upload coverage to Codecov
+      if: matrix.go-version == '1.21'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+
+    - name: Run benchmarks
+      if: matrix.go-version == '1.21'
+      run: go test -bench=. -benchmem ./test/benchmark/... | tee benchmark.txt
+
+    - name: Store benchmark result
+      if: matrix.go-version == '1.21'
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        name: Go Benchmark
+        tool: 'go'
+        output-file-path: benchmark.txt
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        auto-push: true
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        args: --timeout=5m
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run gosec Security Scanner
+      uses: securecodewarrior/github-action-gosec@master
+      with:
+        args: '-fmt sarif -out gosec.sarif ./...'
+
+    - name: Upload SARIF file
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: gosec.sarif
+
+  cross-platform:
+    name: Cross Platform Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+        exclude:
+          - goos: windows
+            goarch: arm64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Build
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+      run: |
+        go build -v ./...
+        echo "Build successful for $GOOS/$GOARCH"
+
+  coverage:
+    name: Coverage Check
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run coverage
+      run: |
+        go test -coverprofile=coverage.out ./...
+        go tool cover -func=coverage.out | tee coverage.txt
+        
+    - name: Check coverage threshold
+      run: |
+        COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+        echo "Current coverage: $COVERAGE%"
+        if (( $(echo "$COVERAGE < 90" | bc -l) )); then
+          echo "Coverage $COVERAGE% is below required 90%"
+          exit 1
+        fi
+        echo "Coverage check passed: $COVERAGE%"
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v3
+      with:
+        fail-on-severity: moderate
+
+  check-docs:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check README links
+      run: |
+        # Check if all referenced files exist
+        echo "Checking documentation links..."
+        
+        # Check English README
+        if [[ -f "README.md" ]]; then
+          echo "✓ README.md exists"
+        else
+          echo "✗ README.md missing"
+          exit 1
+        fi
+        
+        # Check Chinese README
+        if [[ -f "README_zh.md" ]]; then
+          echo "✓ README_zh.md exists"
+        else
+          echo "✗ README_zh.md missing"
+          exit 1
+        fi
+        
+        # Check referenced docs
+        for doc in TEST_PLAN.md COMPARISON.md; do
+          if [[ -f "$doc" ]]; then
+            echo "✓ $doc exists"
+          else
+            echo "✗ $doc missing"
+            exit 1
+          fi
+        done
+        
+        echo "All documentation files exist!"
+
+    - name: Validate Go examples in README
+      run: |
+        echo "Validating Go code examples..."
+        # Extract and validate Go code blocks from README
+        # This is a simplified check - in a real project you might want more sophisticated validation
+        if grep -q "```go" README.md; then
+          echo "✓ Go examples found in README"
+        else
+          echo "✗ No Go examples found in README"
+          exit 1
+        fi
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [test, lint, security, cross-platform, coverage]
+    if: always()
+    
+    steps:
+    - name: Notify success
+      if: ${{ needs.test.result == 'success' && needs.lint.result == 'success' && needs.security.result == 'success' && needs.cross-platform.result == 'success' && needs.coverage.result == 'success' }}
+      run: echo "✅ All CI checks passed successfully!"
+      
+    - name: Notify failure
+      if: ${{ needs.test.result == 'failure' || needs.lint.result == 'failure' || needs.security.result == 'failure' || needs.cross-platform.result == 'failure' || needs.coverage.result == 'failure' }}
+      run: |
+        echo "❌ CI checks failed:"
+        echo "Test: ${{ needs.test.result }}"
+        echo "Lint: ${{ needs.lint.result }}"
+        echo "Security: ${{ needs.security.result }}"
+        echo "Cross-platform: ${{ needs.cross-platform.result }}"
+        echo "Coverage: ${{ needs.coverage.result }}"
+        exit 1
