@@ -16,10 +16,7 @@ func TestCronIntegration(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	scheduler := cron.New()
-
 	var executed sync.Map
-	var execCount int32
 
 	// Test basic scheduling
 	t.Run("BasicScheduling", func(t *testing.T) {

@@ -12,6 +12,7 @@ func TestParseValidExpressions(t *testing.T) {
 		expression string
 		expected   bool
 	}{
+		// 5-field format (legacy)
 		{"every minute", "* * * * *", true},
 		{"every hour", "0 * * * *", true},
 		{"every day at midnight", "0 0 * * *", true},
@@ -20,6 +21,17 @@ func TestParseValidExpressions(t *testing.T) {
 		{"range of hours", "0 9-17 * * *", true},
 		{"specific minutes", "0,15,30,45 * * * *", true},
 		{"complex expression", "15 2,14 1 * 1-5", true},
+
+		// 6-field format (with seconds)
+		{"every second", "* * * * * *", true},
+		{"every 30 seconds", "*/30 * * * * *", true},
+		{"every minute at 0 seconds", "0 * * * * *", true},
+		{"every hour at 0:0", "0 0 * * * *", true},
+		{"every day at midnight", "0 0 0 * * *", true},
+		{"every Monday at 9:00:00 AM", "0 0 9 * * 1", true},
+		{"every 5 seconds", "*/5 * * * * *", true},
+		{"specific seconds", "0,15,30,45 * * * * *", true},
+		{"complex 6-field expression", "30 15 2,14 1 * 1-5", true},
 	}
 
 	for _, tt := range tests {
@@ -47,12 +59,18 @@ func TestParseInvalidExpressions(t *testing.T) {
 		expression string
 	}{
 		{"too few fields", "* * *"},
-		{"too many fields", "* * * * * *"},
-		{"invalid minute", "60 * * * *"},
-		{"invalid hour", "0 24 * * *"},
-		{"invalid day", "0 0 32 * *"},
-		{"invalid month", "0 0 1 13 *"},
-		{"invalid weekday", "0 0 * * 7"},
+		{"too many fields", "* * * * * * *"},
+		{"invalid minute in 5-field", "60 * * * *"},
+		{"invalid hour in 5-field", "0 24 * * *"},
+		{"invalid day in 5-field", "0 0 32 * *"},
+		{"invalid month in 5-field", "0 0 1 13 *"},
+		{"invalid weekday in 5-field", "0 0 * * 7"},
+		{"invalid second in 6-field", "60 * * * * *"},
+		{"invalid minute in 6-field", "0 60 * * * *"},
+		{"invalid hour in 6-field", "0 0 24 * * *"},
+		{"invalid day in 6-field", "0 0 0 32 * *"},
+		{"invalid month in 6-field", "0 0 0 1 13 *"},
+		{"invalid weekday in 6-field", "0 0 0 * * 7"},
 		{"invalid range", "0 25-30 * * *"},
 		{"invalid step", "*/0 * * * *"},
 		{"empty expression", ""},
@@ -72,7 +90,7 @@ func TestParseInvalidExpressions(t *testing.T) {
 }
 
 func TestScheduleNext(t *testing.T) {
-	// Test "every minute" expression
+	// Test "every minute" expression (5-field)
 	schedule, err := Parse("* * * * *")
 	if err != nil {
 		t.Fatalf("Failed to parse expression: %v", err)
@@ -81,6 +99,47 @@ func TestScheduleNext(t *testing.T) {
 	now := time.Date(2024, 1, 1, 12, 30, 0, 0, time.UTC)
 	next := schedule.Next(now)
 	expected := time.Date(2024, 1, 1, 12, 31, 0, 0, time.UTC)
+
+	if !next.Equal(expected) {
+		t.Errorf("Next(%v) = %v; want %v", now, next, expected)
+	}
+}
+
+func TestScheduleNextWithSeconds(t *testing.T) {
+	// Test "every second" expression (6-field)
+	schedule, err := Parse("* * * * * *")
+	if err != nil {
+		t.Fatalf("Failed to parse expression: %v", err)
+	}
+
+	now := time.Date(2024, 1, 1, 12, 30, 30, 0, time.UTC)
+	next := schedule.Next(now)
+	expected := time.Date(2024, 1, 1, 12, 30, 31, 0, time.UTC)
+
+	if !next.Equal(expected) {
+		t.Errorf("Next(%v) = %v; want %v", now, next, expected)
+	}
+}
+
+func TestScheduleNextEvery30Seconds(t *testing.T) {
+	// Test "every 30 seconds" expression
+	schedule, err := Parse("*/30 * * * * *")
+	if err != nil {
+		t.Fatalf("Failed to parse expression: %v", err)
+	}
+
+	now := time.Date(2024, 1, 1, 12, 30, 15, 0, time.UTC)
+	next := schedule.Next(now)
+	expected := time.Date(2024, 1, 1, 12, 30, 30, 0, time.UTC)
+
+	if !next.Equal(expected) {
+		t.Errorf("Next(%v) = %v; want %v", now, next, expected)
+	}
+
+	// Test from 30 seconds - should go to next minute
+	now = time.Date(2024, 1, 1, 12, 30, 30, 0, time.UTC)
+	next = schedule.Next(now)
+	expected = time.Date(2024, 1, 1, 12, 31, 0, 0, time.UTC)
 
 	if !next.Equal(expected) {
 		t.Errorf("Next(%v) = %v; want %v", now, next, expected)

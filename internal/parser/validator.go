@@ -64,7 +64,7 @@ func GetExecutionsBetween(expr string, start, end time.Time) ([]time.Time, error
 	}
 
 	var executions []time.Time
-	current := start.Add(-time.Minute) // Start one minute before to include start time if it matches
+	current := start.Add(-time.Second) // Start one second before to include start time if it matches
 
 	for {
 		next := schedule.Next(current)

@@ -8,6 +8,7 @@ import (
 
 // Schedule represents a parsed cron schedule
 type Schedule struct {
+	Seconds  []int // 0-59
 	Minutes  []int // 0-59
 	Hours    []int // 0-23
 	Days     []int // 1-31
@@ -18,14 +19,14 @@ type Schedule struct {
 
 // Next calculates the next execution time after the given time
 func (s *Schedule) Next(after time.Time) time.Time {
-	t := after.In(s.Timezone).Add(time.Minute).Truncate(time.Minute)
+	t := after.In(s.Timezone).Add(time.Second).Truncate(time.Second)
 
 	// Find next valid time
-	for i := 0; i < 4*365*24*60; i++ { // Limit iterations to prevent infinite loops
+	for i := 0; i < 4*365*24*60*60; i++ { // Limit iterations to prevent infinite loops
 		if s.matches(t) {
 			return t.In(after.Location())
 		}
-		t = t.Add(time.Minute)
+		t = t.Add(time.Second)
 	}
 
 	// Return zero time if no match found (should not happen with valid cron expressions)
@@ -34,7 +35,8 @@ func (s *Schedule) Next(after time.Time) time.Time {
 
 // matches checks if the given time matches the schedule
 func (s *Schedule) matches(t time.Time) bool {
-	return s.matchesField(t.Minute(), s.Minutes) &&
+	return s.matchesField(t.Second(), s.Seconds) &&
+		s.matchesField(t.Minute(), s.Minutes) &&
 		s.matchesField(t.Hour(), s.Hours) &&
 		s.matchesField(t.Day(), s.Days) &&
 		s.matchesField(int(t.Month()), s.Months) &&
@@ -59,7 +61,8 @@ func Parse(expr string) (*Schedule, error) {
 // ParseInLocation parses a cron expression string in a specific timezone
 func ParseInLocation(expr string, loc *time.Location) (*Schedule, error) {
 	fields := strings.Fields(expr)
-	if len(fields) != 5 {
+	// Support both 5-field (minute-based) and 6-field (second-based) formats
+	if len(fields) != 5 && len(fields) != 6 {
 		return nil, ErrInvalidExpression
 	}
 
@@ -68,20 +71,45 @@ func ParseInLocation(expr string, loc *time.Location) (*Schedule, error) {
 	}
 
 	var err error
-	if schedule.Minutes, err = parseField(fields[0], 0, 59); err != nil {
-		return nil, err
-	}
-	if schedule.Hours, err = parseField(fields[1], 0, 23); err != nil {
-		return nil, err
-	}
-	if schedule.Days, err = parseField(fields[2], 1, 31); err != nil {
-		return nil, err
-	}
-	if schedule.Months, err = parseField(fields[3], 1, 12); err != nil {
-		return nil, err
-	}
-	if schedule.Weekdays, err = parseField(fields[4], 0, 6); err != nil {
-		return nil, err
+	// Handle 6-field format: seconds minutes hours days months weekdays
+	if len(fields) == 6 {
+		if schedule.Seconds, err = parseField(fields[0], 0, 59); err != nil {
+			return nil, err
+		}
+		if schedule.Minutes, err = parseField(fields[1], 0, 59); err != nil {
+			return nil, err
+		}
+		if schedule.Hours, err = parseField(fields[2], 0, 23); err != nil {
+			return nil, err
+		}
+		if schedule.Days, err = parseField(fields[3], 1, 31); err != nil {
+			return nil, err
+		}
+		if schedule.Months, err = parseField(fields[4], 1, 12); err != nil {
+			return nil, err
+		}
+		if schedule.Weekdays, err = parseField(fields[5], 0, 6); err != nil {
+			return nil, err
+		}
+	} else {
+		// Handle 5-field format: minutes hours days months weekdays (legacy support)
+		// Default seconds to 0 for backward compatibility
+		schedule.Seconds = []int{0}
+		if schedule.Minutes, err = parseField(fields[0], 0, 59); err != nil {
+			return nil, err
+		}
+		if schedule.Hours, err = parseField(fields[1], 0, 23); err != nil {
+			return nil, err
+		}
+		if schedule.Days, err = parseField(fields[2], 1, 31); err != nil {
+			return nil, err
+		}
+		if schedule.Months, err = parseField(fields[3], 1, 12); err != nil {
+			return nil, err
+		}
+		if schedule.Weekdays, err = parseField(fields[4], 0, 6); err != nil {
+			return nil, err
+		}
 	}
 
 	return schedule, nil

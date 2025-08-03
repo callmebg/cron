@@ -55,6 +55,7 @@ func (s *Scheduler) Start(ctx context.Context) error {
 	s.running = true
 	s.startTime = time.Now()
 	s.config.Logger.Println("Cron scheduler started")
+	s.stopCh = make(chan struct{})
 
 	// Start the main scheduling loop
 	go s.run(ctx)
