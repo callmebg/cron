@@ -10,13 +10,11 @@ import (
 )
 
 func TestCronIntegration(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	var executed sync.Map
-
 	// Test basic scheduling
 	t.Run("BasicScheduling", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		var executed sync.Map
 		scheduler := cron.New()
 
 		err := scheduler.AddJob("*/2 * * * * *", func() {
@@ -39,6 +37,9 @@ func TestCronIntegration(t *testing.T) {
 
 	// Test multiple jobs
 	t.Run("MultipleJobs", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		var executed sync.Map
 		scheduler := cron.New()
 
 		err := scheduler.AddJob("*/1 * * * * *", func() {
@@ -70,6 +71,9 @@ func TestCronIntegration(t *testing.T) {
 
 	// Test job removal during execution
 	t.Run("JobRemovalDuringExecution", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		var executed sync.Map
 		scheduler := cron.New()
 
 		err := scheduler.AddJob("*/1 * * * * *", func() {
@@ -96,6 +100,9 @@ func TestCronIntegration(t *testing.T) {
 
 	// Test scheduler start/stop
 	t.Run("StartStopScheduler", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		var executed sync.Map
 		scheduler := cron.New()
 
 		err := scheduler.AddJob("*/1 * * * * *", func() {
