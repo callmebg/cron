@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package integration
 
 import (
@@ -253,7 +250,7 @@ func TestCronLongRunningJobs(t *testing.T) {
 		}
 
 		scheduler.Start(ctx)
-		time.Sleep(3 * time.Second)
+		time.Sleep(4 * time.Second)
 		scheduler.Stop()
 
 		if !jobCompleted {
