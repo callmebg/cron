@@ -37,7 +37,7 @@ func TestWaitGroup(t *testing.T) {
 	wg := NewWaitGroup()
 
 	// Test basic wait group functionality
-	done := make(chan bool)
+	done := make(chan bool, 1)
 
 	wg.Add(1)
 	go func() {
