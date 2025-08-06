@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/callmebg/cron/internal/scheduler"
-	"github.com/callmebg/cron/internal/types"
 )
 
 // Scheduler represents the main cron scheduler
@@ -118,7 +117,7 @@ func (s *Scheduler) AddJobWithConfig(name, schedule string, config JobConfig, jo
 	}
 
 	// Create new job
-	newJob, err := scheduler.NewJob(jobID, name, schedule, types.JobFunc(job), config, s.config.Timezone)
+	newJob, err := scheduler.NewJob(jobID, name, schedule, job, config, s.config.Timezone)
 	if err != nil {
 		return err
 	}
@@ -156,8 +155,8 @@ func (s *Scheduler) AddJobWithErrorConfig(name, schedule string, config JobConfi
 	// Create new job with error handling
 	newJob, err := scheduler.NewJobWithError(
 		jobID, name, schedule,
-		types.JobFuncWithError(job),
-		types.ErrorHandler(errorHandler),
+		job,
+		errorHandler,
 		config,
 		s.config.Timezone,
 	)

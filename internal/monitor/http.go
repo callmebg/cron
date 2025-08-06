@@ -72,7 +72,7 @@ func (h *HTTPMonitor) Stop() error {
 }
 
 // handleMetrics returns comprehensive metrics in JSON format
-func (h *HTTPMonitor) handleMetrics(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPMonitor) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	snapshot := h.metrics.GetSnapshot()
@@ -107,7 +107,7 @@ func (h *HTTPMonitor) handleMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleHealth returns a simple health check
-func (h *HTTPMonitor) handleHealth(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPMonitor) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	status := "ok"
@@ -129,7 +129,7 @@ func (h *HTTPMonitor) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleJobs returns information about all jobs
-func (h *HTTPMonitor) handleJobs(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPMonitor) handleJobs(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	jobNames := h.scheduler.ListJobs()
