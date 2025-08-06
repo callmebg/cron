@@ -7,6 +7,10 @@ import (
 	"github.com/callmebg/cron/internal/types"
 )
 
+const (
+	job2ID = "job2"
+)
+
 func TestNewJobQueue(t *testing.T) {
 	queue := NewJobQueue()
 	if queue == nil {
@@ -69,6 +73,7 @@ func TestJobQueuePeek(t *testing.T) {
 
 	if peeked == nil {
 		t.Error("Peek should return the job")
+		return
 	}
 
 	if peeked.ID != job.ID {
@@ -107,7 +112,7 @@ func TestJobQueueOrdering(t *testing.T) {
 
 	// Peek should return the earliest (job2)
 	peeked := queue.Peek()
-	if peeked.ID != "job2" {
+	if peeked.ID != job2ID {
 		t.Errorf("Peek returned job %q; want job2", peeked.ID)
 	}
 }
@@ -201,6 +206,7 @@ func TestJobQueueGetByID(t *testing.T) {
 	found := queue.GetByID("test-id")
 	if found == nil {
 		t.Error("GetByID should find existing job")
+		return
 	}
 
 	if found.ID != "test-id" {
@@ -228,6 +234,7 @@ func TestJobQueueGetByName(t *testing.T) {
 	found := queue.GetByName("test-job")
 	if found == nil {
 		t.Error("GetByName should find existing job")
+		return
 	}
 
 	if found.Name != "test-job" {

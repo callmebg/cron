@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+const (
+	testJobNamePkg = "test-job"
+)
+
 func TestNew(t *testing.T) {
 	scheduler := New()
 	if scheduler == nil {
@@ -137,7 +141,7 @@ func TestAddNamedJob(t *testing.T) {
 		t.Errorf("Job count = %d; want 1", len(jobs))
 	}
 
-	if jobs[0] != "test-job" {
+	if jobs[0] != testJobNamePkg {
 		t.Errorf("Job name = %q; want test-job", jobs[0])
 	}
 

@@ -56,7 +56,13 @@ func NewJob(id, name, scheduleExpr string, fn types.JobFunc, config types.JobCon
 }
 
 // NewJobWithError creates a new job with error handling
-func NewJobWithError(id, name, scheduleExpr string, fn types.JobFuncWithError, errorHandler types.ErrorHandler, config types.JobConfig, timezone *time.Location) (*Job, error) {
+func NewJobWithError(
+	id, name, scheduleExpr string,
+	fn types.JobFuncWithError,
+	errorHandler types.ErrorHandler,
+	config types.JobConfig,
+	timezone *time.Location,
+) (*Job, error) {
 	schedule, err := parser.ParseInLocation(scheduleExpr, timezone)
 	if err != nil {
 		return nil, err
@@ -162,7 +168,7 @@ func (j *Job) IsJobRunning() bool {
 }
 
 // GetJobStats returns job statistics (thread-safe)
-func (j *Job) GetJobStats() (time.Duration, int64) {
+func (j *Job) GetJobStats() (duration time.Duration, count int64) {
 	j.mu.RLock()
 	defer j.mu.RUnlock()
 	return j.LastDuration, j.RunCount

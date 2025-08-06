@@ -215,7 +215,7 @@ func TestJobStatusConstants(t *testing.T) {
 		JobStatusRunning,
 		JobStatusCompleted,
 		JobStatusFailed,
-		JobStatusCancelled,
+		JobStatusCanceled,
 	}
 
 	for _, status := range expectedStatuses {

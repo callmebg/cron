@@ -10,6 +10,11 @@ import (
 	"github.com/callmebg/cron/internal/types"
 )
 
+const (
+	testJobID   = "test-id"
+	testJobName = "test-job"
+)
+
 func TestNewJob(t *testing.T) {
 	jobFunc := func() {
 		// Test job function
@@ -20,12 +25,12 @@ func TestNewJob(t *testing.T) {
 		t.Fatalf("NewJob failed: %v", err)
 	}
 
-	if job.ID != "test-id" {
-		t.Errorf("Job ID = %q; want %q", job.ID, "test-id")
+	if job.ID != testJobID {
+		t.Errorf("Job ID = %q; want %q", job.ID, testJobID)
 	}
 
-	if job.Name != "test-job" {
-		t.Errorf("Job Name = %q; want %q", job.Name, "test-job")
+	if job.Name != testJobName {
+		t.Errorf("Job Name = %q; want %q", job.Name, testJobName)
 	}
 
 	if job.Status != types.JobStatusPending {
@@ -46,7 +51,7 @@ func TestNewJobWithError(t *testing.T) {
 		// Handle error
 	}
 
-	job, err := NewJobWithError("test-id", "test-job", "0 9 * * *", jobFunc, errorHandler, types.DefaultJobConfig(), time.UTC)
+	job, err := NewJobWithError(testJobID, testJobName, "0 9 * * *", jobFunc, errorHandler, types.DefaultJobConfig(), time.UTC)
 	if err != nil {
 		t.Fatalf("NewJobWithError failed: %v", err)
 	}
@@ -100,7 +105,7 @@ func TestJobUpdateNextExecution(t *testing.T) {
 		// Test job function
 	}
 
-	job, err := NewJob("test-id", "test-job", "0 9 * * *", jobFunc, types.DefaultJobConfig(), time.UTC)
+	job, err := NewJob(testJobID, testJobName, "0 9 * * *", jobFunc, types.DefaultJobConfig(), time.UTC)
 	if err != nil {
 		t.Fatalf("NewJob failed: %v", err)
 	}
@@ -306,7 +311,7 @@ func TestJobGetStats(t *testing.T) {
 		// Test job function
 	}
 
-	job, err := NewJob("test-id", "test-job", "0 9 * * *", jobFunc, types.DefaultJobConfig(), time.UTC)
+	job, err := NewJob(testJobID, testJobName, "0 9 * * *", jobFunc, types.DefaultJobConfig(), time.UTC)
 	if err != nil {
 		t.Fatalf("NewJob failed: %v", err)
 	}
@@ -319,8 +324,8 @@ func TestJobGetStats(t *testing.T) {
 
 	stats := job.GetStats()
 
-	if stats.Name != "test-job" {
-		t.Errorf("Stats Name = %q; want %q", stats.Name, "test-job")
+	if stats.Name != testJobName {
+		t.Errorf("Stats Name = %q; want %q", stats.Name, testJobName)
 	}
 
 	if stats.TotalRuns != 10 {
@@ -462,6 +467,7 @@ func FuzzJobWithError(f *testing.F) {
 		defer func() {
 			if r := recover(); r != nil {
 				// Expected panic in fuzz test, just continue
+				t.Logf("Recovered from panic: %v", r)
 			}
 		}()
 

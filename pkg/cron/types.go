@@ -22,5 +22,5 @@ const (
 	JobStatusRunning   = types.JobStatusRunning
 	JobStatusCompleted = types.JobStatusCompleted
 	JobStatusFailed    = types.JobStatusFailed
-	JobStatusCancelled = types.JobStatusCancelled
+	JobStatusCanceled  = types.JobStatusCanceled
 )

@@ -116,13 +116,13 @@ func ParseInLocation(expr string, loc *time.Location) (*Schedule, error) {
 }
 
 // parseField parses a single field of a cron expression
-func parseField(field string, min, max int) ([]int, error) {
+func parseField(field string, minVal, maxVal int) ([]int, error) {
 	var values []int
 
 	// Handle comma-separated values
 	parts := strings.Split(field, ",")
 	for _, part := range parts {
-		vals, err := parseFieldPart(part, min, max)
+		vals, err := parseFieldPart(part, minVal, maxVal)
 		if err != nil {
 			return nil, err
 		}
@@ -134,20 +134,20 @@ func parseField(field string, min, max int) ([]int, error) {
 }
 
 // parseFieldPart parses a part of a field (handling *, ranges, and steps)
-func parseFieldPart(part string, min, max int) ([]int, error) {
+func parseFieldPart(part string, minVal, maxVal int) ([]int, error) {
 	// Handle step values (e.g., */5, 1-10/2)
 	if strings.Contains(part, "/") {
-		return parseStepValue(part, min, max)
+		return parseStepValue(part, minVal, maxVal)
 	}
 
 	// Handle ranges (e.g., 1-5)
 	if strings.Contains(part, "-") {
-		return parseRange(part, min, max)
+		return parseRange(part, minVal, maxVal)
 	}
 
 	// Handle wildcard
 	if part == "*" {
-		return generateRange(min, max), nil
+		return generateRange(minVal, maxVal), nil
 	}
 
 	// Handle single value
@@ -155,14 +155,14 @@ func parseFieldPart(part string, min, max int) ([]int, error) {
 	if err != nil {
 		return nil, ErrInvalidExpression
 	}
-	if value < min || value > max {
+	if value < minVal || value > maxVal {
 		return nil, ErrValueOutOfRange
 	}
 	return []int{value}, nil
 }
 
 // parseStepValue parses step values like */5 or 1-10/2
-func parseStepValue(part string, min, max int) ([]int, error) {
+func parseStepValue(part string, minVal, maxVal int) ([]int, error) {
 	stepParts := strings.Split(part, "/")
 	if len(stepParts) != 2 {
 		return nil, ErrInvalidExpression
@@ -175,9 +175,9 @@ func parseStepValue(part string, min, max int) ([]int, error) {
 
 	var baseValues []int
 	if stepParts[0] == "*" {
-		baseValues = generateRange(min, max)
+		baseValues = generateRange(minVal, maxVal)
 	} else {
-		baseValues, err = parseFieldPart(stepParts[0], min, max)
+		baseValues, err = parseFieldPart(stepParts[0], minVal, maxVal)
 		if err != nil {
 			return nil, err
 		}
@@ -194,7 +194,7 @@ func parseStepValue(part string, min, max int) ([]int, error) {
 }
 
 // parseRange parses range values like 1-5
-func parseRange(part string, min, max int) ([]int, error) {
+func parseRange(part string, minVal, maxVal int) ([]int, error) {
 	rangeParts := strings.Split(part, "-")
 	if len(rangeParts) != 2 {
 		return nil, ErrInvalidExpression
@@ -209,7 +209,7 @@ func parseRange(part string, min, max int) ([]int, error) {
 		return nil, ErrInvalidExpression
 	}
 
-	if start < min || start > max || end < min || end > max || start > end {
+	if start < minVal || start > maxVal || end < minVal || end > maxVal || start > end {
 		return nil, ErrValueOutOfRange
 	}
 
@@ -221,10 +221,10 @@ func parseRange(part string, min, max int) ([]int, error) {
 }
 
 // generateRange generates a slice of integers from min to max (inclusive)
-func generateRange(min, max int) []int {
-	result := make([]int, max-min+1)
+func generateRange(minVal, maxVal int) []int {
+	result := make([]int, maxVal-minVal+1)
 	for i := range result {
-		result[i] = min + i
+		result[i] = minVal + i
 	}
 	return result
 }

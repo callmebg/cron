@@ -21,10 +21,6 @@ type Metrics struct {
 	minExecutionTime   int64 // nanoseconds
 	maxExecutionTime   int64 // nanoseconds
 
-	// Rate metrics
-	jobsPerMinute float64
-	errorRate     float64
-
 	// System metrics
 	startTime        time.Time
 	lastJobExecution time.Time

@@ -44,10 +44,8 @@ func TestParseValidExpressions(t *testing.T) {
 				if schedule == nil {
 					t.Errorf("Parse(%q) returned nil schedule", tt.expression)
 				}
-			} else {
-				if err == nil {
-					t.Errorf("Parse(%q) should have returned error", tt.expression)
-				}
+			} else if err == nil {
+				t.Errorf("Parse(%q) should have returned error", tt.expression)
 			}
 		})
 	}
@@ -470,7 +468,7 @@ func FuzzNormalizeExpression(f *testing.F) {
 		result := NormalizeExpression(input)
 
 		// If input is empty or only whitespace, result should be empty
-		if len(strings.TrimSpace(input)) == 0 {
+		if strings.TrimSpace(input) == "" {
 			if result != "" {
 				t.Errorf("NormalizeExpression(%q) = %q; expected empty string", input, result)
 			}

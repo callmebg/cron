@@ -166,7 +166,7 @@ func TestJobStatusConstants(t *testing.T) {
 		JobStatusRunning,
 		JobStatusCompleted,
 		JobStatusFailed,
-		JobStatusCancelled,
+		JobStatusCanceled,
 	}
 
 	expected := []string{
@@ -174,7 +174,7 @@ func TestJobStatusConstants(t *testing.T) {
 		"running",
 		"completed",
 		"failed",
-		"cancelled",
+		"canceled",
 	}
 
 	for i, status := range statuses {

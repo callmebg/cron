@@ -100,7 +100,10 @@ func (h *HTTPMonitor) handleMetrics(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // handleHealth returns a simple health check
@@ -119,7 +122,10 @@ func (h *HTTPMonitor) handleHealth(w http.ResponseWriter, r *http.Request) {
 		"uptime":    h.metrics.GetSnapshot().Uptime.String(),
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // handleJobs returns information about all jobs
@@ -155,7 +161,10 @@ func (h *HTTPMonitor) handleJobs(w http.ResponseWriter, r *http.Request) {
 		"jobs":       jobs,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // handleJobDetail returns detailed information about a specific job
@@ -197,7 +206,10 @@ func (h *HTTPMonitor) handleJobDetail(w http.ResponseWriter, r *http.Request) {
 		"next_5_executions": nextExecStrings,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // handleSchedule returns upcoming executions for all jobs
@@ -229,7 +241,10 @@ func (h *HTTPMonitor) handleSchedule(w http.ResponseWriter, r *http.Request) {
 		"schedule":  schedule,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // handleIndex returns a simple HTML interface
@@ -273,7 +288,10 @@ func (h *HTTPMonitor) handleIndex(w http.ResponseWriter, r *http.Request) {
 </body>
 </html>`
 
-	w.Write([]byte(html))
+	if _, err := w.Write([]byte(html)); err != nil {
+		// Log error but don't return error response since headers already sent
+		fmt.Printf("Failed to write HTML response: %v\n", err)
+	}
 }
 
 // Helper functions

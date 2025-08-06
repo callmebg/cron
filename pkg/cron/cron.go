@@ -30,7 +30,7 @@ func New() *Scheduler {
 
 // NewWithConfig creates a new scheduler with custom configuration
 func NewWithConfig(config Config) *Scheduler {
-	if err := types.Config(config).Validate(); err != nil {
+	if err := config.Validate(); err != nil {
 		panic(fmt.Sprintf("invalid configuration: %v", err))
 	}
 
@@ -101,7 +101,7 @@ func (s *Scheduler) AddJobWithConfig(name, schedule string, config JobConfig, jo
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if err := types.JobConfig(config).Validate(); err != nil {
+	if err := config.Validate(); err != nil {
 		return err
 	}
 
@@ -118,7 +118,7 @@ func (s *Scheduler) AddJobWithConfig(name, schedule string, config JobConfig, jo
 	}
 
 	// Create new job
-	newJob, err := scheduler.NewJob(jobID, name, schedule, types.JobFunc(job), types.JobConfig(config), s.config.Timezone)
+	newJob, err := scheduler.NewJob(jobID, name, schedule, types.JobFunc(job), config, s.config.Timezone)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (s *Scheduler) AddJobWithErrorConfig(name, schedule string, config JobConfi
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if err := types.JobConfig(config).Validate(); err != nil {
+	if err := config.Validate(); err != nil {
 		return err
 	}
 
@@ -154,7 +154,13 @@ func (s *Scheduler) AddJobWithErrorConfig(name, schedule string, config JobConfi
 	}
 
 	// Create new job with error handling
-	newJob, err := scheduler.NewJobWithError(jobID, name, schedule, types.JobFuncWithError(job), types.ErrorHandler(errorHandler), types.JobConfig(config), s.config.Timezone)
+	newJob, err := scheduler.NewJobWithError(
+		jobID, name, schedule,
+		types.JobFuncWithError(job),
+		types.ErrorHandler(errorHandler),
+		config,
+		s.config.Timezone,
+	)
 	if err != nil {
 		return err
 	}
@@ -249,7 +255,7 @@ func (s *Scheduler) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			s.config.Logger.Println("Scheduler context cancelled")
+			s.config.Logger.Println("Scheduler context canceled")
 			return
 		case <-s.stopCh:
 			s.config.Logger.Println("Scheduler stop signal received")
