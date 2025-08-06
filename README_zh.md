@@ -171,6 +171,62 @@ cron/
 └── .github/workflows/         # 🔄 CI/CD管道
 ```
 
+## 🎯 综合示例
+
+`cmd/examples/` 目录包含全面的可运行示例，演示cron库的各个方面：
+
+### 📚 可用示例
+
+| 示例 | 描述 | 关键特性 |
+|------|------|---------|
+| **[basic/](cmd/examples/basic/)** | 基础用法模式 | 简单调度、多种cron格式、优雅关闭 |
+| **[advanced/](cmd/examples/advanced/)** | 高级配置 | 错误处理、重试、超时、自定义配置 |
+| **[monitoring/](cmd/examples/monitoring/)** | 监控和指标 | HTTP端点、实时指标、性能跟踪 |
+| **[testing/](cmd/examples/testing/)** | 测试模式 | 单元测试、模拟、基准测试、测试助手 |
+
+### 🏃 运行示例
+
+```bash
+# 基础用法示例
+go run cmd/examples/basic/main.go
+
+# 带错误处理的高级特性
+go run cmd/examples/advanced/main.go
+
+# 带HTTP端点的监控
+go run cmd/examples/monitoring/main.go
+# 访问 http://localhost:8080 查看指标仪表板
+
+# 测试模式（包含测试函数和助手）
+go run cmd/examples/testing/main.go
+```
+
+### 💡 示例重点
+
+**基础示例**：从这里开始理解基本概念
+- 多种任务调度模式
+- 5字段和6字段cron表达式
+- 正确的启动和关闭程序
+
+**高级示例**：生产就绪模式
+- 自定义调度器配置
+- 任务重试机制和超时
+- 综合错误处理
+- 工作时间调度
+- 实时状态监控
+
+**监控示例**：可观测性和指标
+- HTTP监控端点（`/health`、`/metrics`、`/jobs`）
+- 实时性能跟踪
+- 任务执行统计
+- 基于Web的仪表板访问
+
+**测试示例**：质量保证模式
+- 单元测试策略
+- 模拟时间实现
+- 测试助手工具
+- 基准测试编写指南
+
 ## 📋 Cron表达式格式
 
 本库支持5字段和6字段cron表达式：

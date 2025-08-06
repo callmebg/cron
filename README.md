@@ -171,6 +171,62 @@ cron/
 └── .github/workflows/         # 🔄 CI/CD pipelines
 ```
 
+## 🎯 Comprehensive Examples
+
+The `cmd/examples/` directory contains comprehensive, runnable examples demonstrating various aspects of the cron library:
+
+### 📚 Available Examples
+
+| Example | Description | Key Features |
+|---------|-------------|--------------|
+| **[basic/](cmd/examples/basic/)** | Essential usage patterns | Simple scheduling, multiple cron formats, graceful shutdown |
+| **[advanced/](cmd/examples/advanced/)** | Advanced configurations | Error handling, retries, timeouts, custom configuration |
+| **[monitoring/](cmd/examples/monitoring/)** | Monitoring & metrics | HTTP endpoints, real-time metrics, performance tracking |
+| **[testing/](cmd/examples/testing/)** | Testing patterns | Unit tests, mocking, benchmarks, test helpers |
+
+### 🏃 Running Examples
+
+```bash
+# Basic usage example
+go run cmd/examples/basic/main.go
+
+# Advanced features with error handling
+go run cmd/examples/advanced/main.go
+
+# Monitoring with HTTP endpoints
+go run cmd/examples/monitoring/main.go
+# Visit http://localhost:8080 for metrics dashboard
+
+# Testing patterns (includes test functions and helpers)
+go run cmd/examples/testing/main.go
+```
+
+### 💡 Example Highlights
+
+**Basic Example**: Start here to understand fundamental concepts
+- Multiple job scheduling patterns
+- 5-field and 6-field cron expressions
+- Proper startup and shutdown procedures
+
+**Advanced Example**: Production-ready patterns
+- Custom scheduler configuration
+- Job retry mechanisms and timeouts
+- Comprehensive error handling
+- Business hours scheduling
+- Real-time status monitoring
+
+**Monitoring Example**: Observability and metrics
+- HTTP monitoring endpoints (`/health`, `/metrics`, `/jobs`)
+- Real-time performance tracking
+- Job execution statistics
+- Web-based dashboard access
+
+**Testing Example**: Quality assurance patterns
+- Unit testing strategies
+- Mock time implementations
+- Test helper utilities
+- Benchmark writing guide
+
 ## 📋 Cron Expression Format
 
 This library supports both 5-field and 6-field cron expressions:
