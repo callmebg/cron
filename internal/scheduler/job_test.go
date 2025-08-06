@@ -250,7 +250,7 @@ func TestJobExecuteWithError(t *testing.T) {
 		return testError
 	}
 
-	errorHandler := func(_ error) {
+	errorHandler := func(err error) {
 		errorHandled = true
 		if err != testError {
 			t.Errorf("Error handler received %v; want %v", err, testError)
