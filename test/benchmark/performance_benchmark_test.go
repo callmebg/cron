@@ -11,9 +11,9 @@ import (
 
 func BenchmarkMonitoringOverhead(b *testing.B) {
 	b.Run("WithMonitoring", func(b *testing.B) {
-		config := cron.Config{
-			EnableMonitoring: true,
-		}
+		config := cron.DefaultConfig()
+		config.EnableMonitoring = true
+		config.MonitoringPort = 8081
 		scheduler := cron.NewWithConfig(config)
 
 		b.ResetTimer()
@@ -135,9 +135,8 @@ func BenchmarkTimeZoneHandling(b *testing.B) {
 				b.Skip("Timezone not available:", locName)
 			}
 
-			config := cron.Config{
-				Timezone: loc,
-			}
+			config := cron.DefaultConfig()
+			config.Timezone = loc
 			scheduler := cron.NewWithConfig(config)
 
 			b.ResetTimer()

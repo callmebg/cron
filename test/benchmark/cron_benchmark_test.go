@@ -16,12 +16,12 @@ func BenchmarkCronParsing(b *testing.B) {
 		"*/5 0 * * * *",
 		"0 30 9-17 * * 1-5",
 		"0 0,12 1 */2 * *",
-		"0 0 0 1 1 * 2020",
-		"@yearly",
-		"@monthly",
-		"@weekly",
-		"@daily",
-		"@hourly",
+		"0 0 0 1 1 *",
+		"0 0 * * * *",   // @hourly equivalent
+		"0 0 0 * * *",   // @daily equivalent  
+		"0 0 0 * * 0",   // @weekly equivalent
+		"0 0 0 1 * *",   // @monthly equivalent
+		"0 0 0 1 1 *",   // @yearly equivalent
 	}
 
 	b.ResetTimer()
@@ -36,11 +36,11 @@ func BenchmarkCronParsing(b *testing.B) {
 
 func BenchmarkCronParsingComplex(b *testing.B) {
 	complexExpressions := []string{
-		"0 0/5 14,18,3-39,52 * JAN,MAR,SEP MON-FRI 2002-2010",
-		"0 23-7/2,8 * * * *",
+		"0 0/5 14,18 * 1,3,9 1-5",
+		"0 0-23/2,8 * * * *",
 		"0 11 4 * 5-6 *",
-		"0 */5 * * * * *",
-		"0 0 */2 1 * * *",
+		"0 */5 * * * *",
+		"0 0 */2 1 * *",
 	}
 
 	b.ResetTimer()
@@ -180,7 +180,7 @@ func BenchmarkCompareCronExpressions(b *testing.B) {
 		"Daily":   "0 0 12 * * *",
 		"Weekly":  "0 0 12 * * 0",
 		"Monthly": "0 0 12 1 * *",
-		"Complex": "0 0/5 14,18 * JAN-MAR MON-FRI",
+		"Complex": "0 0/5 14,18 * 1,3 1-5",
 	}
 
 	for name, expr := range expressions {

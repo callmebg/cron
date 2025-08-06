@@ -245,12 +245,15 @@ func TestCronLongRunningJobs(t *testing.T) {
 
 		var startTime, endTime time.Time
 		var jobCompleted bool
+		var mu sync.Mutex
 
 		err := scheduler.AddJob("*/2 * * * * *", func() {
+			mu.Lock()
 			startTime = time.Now()
 			time.Sleep(1 * time.Second) // Simulate long-running job
 			endTime = time.Now()
 			jobCompleted = true
+			mu.Unlock()
 		})
 		if err != nil {
 			t.Fatalf("Failed to add job: %v", err)
@@ -260,11 +263,17 @@ func TestCronLongRunningJobs(t *testing.T) {
 		time.Sleep(4 * time.Second)
 		scheduler.Stop()
 
-		if !jobCompleted {
+		mu.Lock()
+		completed := jobCompleted
+		start := startTime
+		end := endTime
+		mu.Unlock()
+
+		if !completed {
 			t.Error("Long-running job was not completed")
 		}
 
-		duration := endTime.Sub(startTime)
+		duration := end.Sub(start)
 		if duration < 1*time.Second {
 			t.Errorf("Job duration %v is less than expected 1 second", duration)
 		}
