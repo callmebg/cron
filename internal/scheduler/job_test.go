@@ -517,7 +517,7 @@ func FuzzJobConfiguration(f *testing.F) {
 	f.Add(int64(5000), int64(500), 1, false)
 	f.Add(int64(100), int64(10), 5, true)
 
-	f.Fuzz(func(t *testing.T, timeoutMs, retryMs int64, maxRetries int, allowOverlap bool) {
+	f.Fuzz(func(t *testing.T, timeoutMs, retryMs int64, maxRetries int, _ bool) {
 		// Ensure reasonable bounds
 		if timeoutMs < 0 {
 			timeoutMs = -timeoutMs

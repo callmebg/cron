@@ -182,7 +182,7 @@ func TestCronErrorHandling(t *testing.T) {
 		var recovered bool
 		err := scheduler.AddJobWithErrorHandler("panic-job", "*/1 * * * * *", func() error {
 			panic("test panic")
-		}, func(err error) {
+		}, func(_ error) {
 			recovered = true
 		})
 		if err != nil {

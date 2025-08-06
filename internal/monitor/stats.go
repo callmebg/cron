@@ -6,6 +6,15 @@ import (
 	"time"
 )
 
+// Statistics constants
+const (
+	defaultMaxHours           = 24 // Keep 24 hours of hourly stats
+	defaultMaxDays            = 30 // Keep 30 days of daily stats
+	hoursPerDay               = 24
+	maxRecentExecutions       = 50
+	millisecondsPerNanosecond = 1e6
+)
+
 // StatsAggregator aggregates and maintains historical statistics
 type StatsAggregator struct {
 	mu          sync.RWMutex
@@ -22,8 +31,8 @@ func NewStatsAggregator() *StatsAggregator {
 		hourlyStats: make([]HourlyStats, 0),
 		dailyStats:  make([]DailyStats, 0),
 		jobStats:    make(map[string]*JobStatsHistory),
-		maxHours:    24, // Keep 24 hours of hourly stats
-		maxDays:     30, // Keep 30 days of daily stats
+		maxHours:    defaultMaxHours,
+		maxDays:     defaultMaxDays,
 	}
 }
 
@@ -104,7 +113,7 @@ func (sa *StatsAggregator) RecordJobExecution(jobName string, duration time.Dura
 
 	// Calculate success rate
 	if jobStats.TotalExecutions > 0 {
-		jobStats.SuccessRate = float64(jobStats.SuccessfulRuns) / float64(jobStats.TotalExecutions) * 100
+		jobStats.SuccessRate = float64(jobStats.SuccessfulRuns) / float64(jobStats.TotalExecutions) * percentageMultiplier
 	}
 
 	// Add to recent executions (keep only last 50)
@@ -116,7 +125,7 @@ func (sa *StatsAggregator) RecordJobExecution(jobName string, duration time.Dura
 	}
 
 	jobStats.RecentExecutions = append(jobStats.RecentExecutions, execution)
-	if len(jobStats.RecentExecutions) > 50 {
+	if len(jobStats.RecentExecutions) > maxRecentExecutions {
 		jobStats.RecentExecutions = jobStats.RecentExecutions[1:]
 	}
 }
@@ -151,9 +160,9 @@ func (sa *StatsAggregator) UpdateHourlyStats(metrics *Metrics) {
 	currentHour.JobsExecuted = snapshot.TotalJobs
 	currentHour.JobsSucceeded = snapshot.CompletedJobs
 	currentHour.JobsFailed = snapshot.FailedJobs
-	currentHour.AverageExecTime = float64(snapshot.AverageExecutionTime.Nanoseconds()) / 1e6 // Convert to milliseconds
-	currentHour.MaxExecTime = float64(snapshot.MaxExecutionTime.Nanoseconds()) / 1e6
-	currentHour.MinExecTime = float64(snapshot.MinExecutionTime.Nanoseconds()) / 1e6
+	currentHour.AverageExecTime = float64(snapshot.AverageExecutionTime.Nanoseconds()) / millisecondsPerNanosecond // Convert to milliseconds
+	currentHour.MaxExecTime = float64(snapshot.MaxExecutionTime.Nanoseconds()) / millisecondsPerNanosecond
+	currentHour.MinExecTime = float64(snapshot.MinExecutionTime.Nanoseconds()) / millisecondsPerNanosecond
 	currentHour.ThroughputPerMin = snapshot.JobsPerMinute
 
 	// Keep only recent hours
@@ -167,7 +176,7 @@ func (sa *StatsAggregator) UpdateDailyStats(metrics *Metrics, uptimePercent floa
 	sa.mu.Lock()
 	defer sa.mu.Unlock()
 
-	today := time.Now().Truncate(24 * time.Hour)
+	today := time.Now().Truncate(hoursPerDay * time.Hour)
 	snapshot := metrics.GetSnapshot()
 
 	// Find or create today's stats
@@ -192,9 +201,9 @@ func (sa *StatsAggregator) UpdateDailyStats(metrics *Metrics, uptimePercent floa
 	currentDay.JobsExecuted = snapshot.TotalJobs
 	currentDay.JobsSucceeded = snapshot.CompletedJobs
 	currentDay.JobsFailed = snapshot.FailedJobs
-	currentDay.AverageExecTime = float64(snapshot.AverageExecutionTime.Nanoseconds()) / 1e6
-	currentDay.MaxExecTime = float64(snapshot.MaxExecutionTime.Nanoseconds()) / 1e6
-	currentDay.MinExecTime = float64(snapshot.MinExecutionTime.Nanoseconds()) / 1e6
+	currentDay.AverageExecTime = float64(snapshot.AverageExecutionTime.Nanoseconds()) / millisecondsPerNanosecond
+	currentDay.MaxExecTime = float64(snapshot.MaxExecutionTime.Nanoseconds()) / millisecondsPerNanosecond
+	currentDay.MinExecTime = float64(snapshot.MinExecutionTime.Nanoseconds()) / millisecondsPerNanosecond
 	currentDay.UptimePercent = uptimePercent
 
 	// Calculate peak throughput from hourly stats for today
@@ -299,7 +308,7 @@ func (sa *StatsAggregator) calculatePeakThroughputForDay(day time.Time) float64 
 	var peak float64
 
 	for _, hourStats := range sa.hourlyStats {
-		if hourStats.Timestamp.Truncate(24 * time.Hour).Equal(day) {
+		if hourStats.Timestamp.Truncate(hoursPerDay * time.Hour).Equal(day) {
 			if hourStats.ThroughputPerMin > peak {
 				peak = hourStats.ThroughputPerMin
 			}

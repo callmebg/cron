@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+// Validation constants
+const (
+	maxValidationExecutions = 10000
+)
+
 // Error definitions for the parser package
 var (
 	ErrInvalidExpression = errors.New("invalid cron expression")
@@ -77,7 +82,7 @@ func GetExecutionsBetween(expr string, start, end time.Time) ([]time.Time, error
 		current = next
 
 		// Safety check to prevent infinite loops
-		if len(executions) > 10000 {
+		if len(executions) > maxValidationExecutions {
 			break
 		}
 	}

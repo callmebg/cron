@@ -78,7 +78,7 @@ func TestMonitoringIntegration(t *testing.T) {
 
 		err := scheduler.AddJobWithErrorHandler("test-job", "*/1 * * * * *", func() error {
 			return cron.ErrJobTimeout
-		}, func(err error) {
+		}, func(_ error) {
 			// Handle error
 		})
 		if err != nil {

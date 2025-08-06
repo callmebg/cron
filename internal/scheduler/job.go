@@ -10,6 +10,11 @@ import (
 	"github.com/callmebg/cron/internal/types"
 )
 
+// Job calculation constants
+const (
+	percentageMultiplier = 100
+)
+
 // Job represents a scheduled job
 type Job struct {
 	ID                string
@@ -92,7 +97,7 @@ func (j *Job) GetStats() types.JobStats {
 
 	var successRate float64
 	if j.RunCount > 0 {
-		successRate = float64(j.SuccessCount) / float64(j.RunCount) * 100
+		successRate = float64(j.SuccessCount) / float64(j.RunCount) * percentageMultiplier
 	}
 
 	return types.JobStats{

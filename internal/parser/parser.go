@@ -6,6 +6,26 @@ import (
 	"time"
 )
 
+// Cron field ranges
+const (
+	secondsMin  = 0
+	secondsMax  = 59
+	minutesMin  = 0
+	minutesMax  = 59
+	hoursMin    = 0
+	hoursMax    = 23
+	daysMin     = 1
+	daysMax     = 31
+	monthsMin   = 1
+	monthsMax   = 12
+	weekdaysMin = 0
+	weekdaysMax = 6
+
+	cronFieldCount6 = 6 // 6-field cron format
+	stepPartsCount  = 2 // step format like "*/5"
+	rangePartsCount = 2 // range format like "1-5"
+)
+
 // Schedule represents a parsed cron schedule
 type Schedule struct {
 	Seconds  []int // 0-59
@@ -72,42 +92,42 @@ func ParseInLocation(expr string, loc *time.Location) (*Schedule, error) {
 
 	var err error
 	// Handle 6-field format: seconds minutes hours days months weekdays
-	if len(fields) == 6 {
-		if schedule.Seconds, err = parseField(fields[0], 0, 59); err != nil {
+	if len(fields) == cronFieldCount6 {
+		if schedule.Seconds, err = parseField(fields[0], secondsMin, secondsMax); err != nil {
 			return nil, err
 		}
-		if schedule.Minutes, err = parseField(fields[1], 0, 59); err != nil {
+		if schedule.Minutes, err = parseField(fields[1], minutesMin, minutesMax); err != nil {
 			return nil, err
 		}
-		if schedule.Hours, err = parseField(fields[2], 0, 23); err != nil {
+		if schedule.Hours, err = parseField(fields[2], hoursMin, hoursMax); err != nil {
 			return nil, err
 		}
-		if schedule.Days, err = parseField(fields[3], 1, 31); err != nil {
+		if schedule.Days, err = parseField(fields[3], daysMin, daysMax); err != nil {
 			return nil, err
 		}
-		if schedule.Months, err = parseField(fields[4], 1, 12); err != nil {
+		if schedule.Months, err = parseField(fields[4], monthsMin, monthsMax); err != nil {
 			return nil, err
 		}
-		if schedule.Weekdays, err = parseField(fields[5], 0, 6); err != nil {
+		if schedule.Weekdays, err = parseField(fields[5], weekdaysMin, weekdaysMax); err != nil {
 			return nil, err
 		}
 	} else {
 		// Handle 5-field format: minutes hours days months weekdays (legacy support)
 		// Default seconds to 0 for backward compatibility
 		schedule.Seconds = []int{0}
-		if schedule.Minutes, err = parseField(fields[0], 0, 59); err != nil {
+		if schedule.Minutes, err = parseField(fields[0], minutesMin, minutesMax); err != nil {
 			return nil, err
 		}
-		if schedule.Hours, err = parseField(fields[1], 0, 23); err != nil {
+		if schedule.Hours, err = parseField(fields[1], hoursMin, hoursMax); err != nil {
 			return nil, err
 		}
-		if schedule.Days, err = parseField(fields[2], 1, 31); err != nil {
+		if schedule.Days, err = parseField(fields[2], daysMin, daysMax); err != nil {
 			return nil, err
 		}
-		if schedule.Months, err = parseField(fields[3], 1, 12); err != nil {
+		if schedule.Months, err = parseField(fields[3], monthsMin, monthsMax); err != nil {
 			return nil, err
 		}
-		if schedule.Weekdays, err = parseField(fields[4], 0, 6); err != nil {
+		if schedule.Weekdays, err = parseField(fields[4], weekdaysMin, weekdaysMax); err != nil {
 			return nil, err
 		}
 	}
@@ -164,7 +184,7 @@ func parseFieldPart(part string, minVal, maxVal int) ([]int, error) {
 // parseStepValue parses step values like */5 or 1-10/2
 func parseStepValue(part string, minVal, maxVal int) ([]int, error) {
 	stepParts := strings.Split(part, "/")
-	if len(stepParts) != 2 {
+	if len(stepParts) != stepPartsCount {
 		return nil, ErrInvalidExpression
 	}
 
@@ -196,7 +216,7 @@ func parseStepValue(part string, minVal, maxVal int) ([]int, error) {
 // parseRange parses range values like 1-5
 func parseRange(part string, minVal, maxVal int) ([]int, error) {
 	rangeParts := strings.Split(part, "-")
-	if len(rangeParts) != 2 {
+	if len(rangeParts) != rangePartsCount {
 		return nil, ErrInvalidExpression
 	}
 

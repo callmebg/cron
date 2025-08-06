@@ -160,7 +160,7 @@ func BenchmarkErrorHandling(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		err := scheduler.AddJobWithErrorHandler("test", "*/1 * * * *", func() error {
 			return cron.ErrJobTimeout
-		}, func(err error) {
+		}, func(_ error) {
 			// Handle error
 		})
 		if err != nil {

@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+// Default configuration constants
+const (
+	defaultMaxConcurrentJobs = 100
+	defaultMonitoringPort    = 8080
+)
+
 // Error definitions for the cron package
 var (
 	// ErrInvalidSchedule is returned when a cron schedule expression is invalid
@@ -76,9 +82,9 @@ func DefaultConfig() Config {
 	return Config{
 		Logger:            log.New(os.Stdout, "CRON: ", log.LstdFlags),
 		Timezone:          time.Local,
-		MaxConcurrentJobs: 100,
+		MaxConcurrentJobs: defaultMaxConcurrentJobs,
 		EnableMonitoring:  false,
-		MonitoringPort:    8080,
+		MonitoringPort:    defaultMonitoringPort,
 	}
 }
 

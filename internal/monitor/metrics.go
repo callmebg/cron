@@ -8,6 +8,11 @@ import (
 	"github.com/callmebg/cron/internal/types"
 )
 
+// Metrics calculation constants
+const (
+	percentageMultiplier = 100
+)
+
 // Metrics holds all monitoring metrics for the scheduler
 type Metrics struct {
 	// Basic counters
@@ -122,7 +127,7 @@ func (m *Metrics) GetSnapshot() MetricsSnapshot {
 
 	var errorRate float64
 	if totalJobs > 0 {
-		errorRate = float64(failedJobs) / float64(totalJobs) * 100
+		errorRate = float64(failedJobs) / float64(totalJobs) * percentageMultiplier
 	}
 
 	var avgExecutionTime time.Duration

@@ -159,7 +159,7 @@ func TestAddJobWithErrorHandler(t *testing.T) {
 		return ErrJobTimeout
 	}
 
-	errorHandler := func(err error) {
+	errorHandler := func(_ error) {
 		errorHandled = true
 	}
 

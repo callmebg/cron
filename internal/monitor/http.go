@@ -10,6 +10,17 @@ import (
 	"github.com/callmebg/cron/internal/types"
 )
 
+// HTTP server configuration constants
+const (
+	defaultReadTimeout   = 10 * time.Second
+	defaultWriteTimeout  = 10 * time.Second
+	defaultIdleTimeout   = 60 * time.Second
+	defaultScheduleCount = 10
+	nextExecutionsCount  = 5
+	maxScheduleCount     = 100
+	decimalBase          = 10
+)
+
 // HTTPMonitor provides HTTP endpoints for monitoring the scheduler
 type HTTPMonitor struct {
 	metrics   *Metrics
@@ -44,9 +55,9 @@ func NewHTTPMonitor(metrics *Metrics, scheduler SchedulerInterface, port int) *H
 	monitor.server = &http.Server{
 		Addr:         fmt.Sprintf(":%d", port),
 		Handler:      mux,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  defaultReadTimeout,
+		WriteTimeout: defaultWriteTimeout,
+		IdleTimeout:  defaultIdleTimeout,
 	}
 
 	return monitor
@@ -185,7 +196,7 @@ func (h *HTTPMonitor) handleJobDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get next executions
-	nextExecutions := h.scheduler.GetNextExecutions(5)
+	nextExecutions := h.scheduler.GetNextExecutions(nextExecutionsCount)
 	jobNextExecutions := nextExecutions[jobName]
 
 	var nextExecStrings []string
@@ -216,9 +227,9 @@ func (h *HTTPMonitor) handleJobDetail(w http.ResponseWriter, r *http.Request) {
 func (h *HTTPMonitor) handleSchedule(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	count := 10 // Default number of upcoming executions
+	count := defaultScheduleCount // Default number of upcoming executions
 	if countStr := r.URL.Query().Get("count"); countStr != "" {
-		if parsedCount := parseInt(countStr, 10); parsedCount > 0 && parsedCount <= 100 {
+		if parsedCount := parseInt(countStr, decimalBase); parsedCount > 0 && parsedCount <= maxScheduleCount {
 			count = parsedCount
 		}
 	}
@@ -311,7 +322,7 @@ func parseInt(s string, defaultValue int) int {
 	var result int
 	for _, c := range s {
 		if c >= '0' && c <= '9' {
-			result = result*10 + int(c-'0')
+			result = result*decimalBase + int(c-'0')
 		} else {
 			return defaultValue
 		}
