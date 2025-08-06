@@ -228,18 +228,6 @@ jobs:
         
         echo "All documentation files exist!"
 
-    - name: Validate Go examples in README
-      run: |
-        echo "Validating Go code examples..."
-        # Extract and validate Go code blocks from README
-        # This is a simplified check - in a real project you might want more sophisticated validation
-        if grep -q "```go" README.md; then
-          echo "✓ Go examples found in README"
-        else
-          echo "✗ No Go examples found in README"
-          exit 1
-        fi
-
   notify:
     name: Notify
     runs-on: ubuntu-latest

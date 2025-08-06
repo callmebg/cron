@@ -77,7 +77,7 @@ func main() {
 	// Start the scheduler
 	fmt.Println("\n=== Starting Scheduler ===")
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	go func() {
 		if err := scheduler.Start(ctx); err != nil {
 			log.Printf("Scheduler error: %v", err)
@@ -126,7 +126,7 @@ func printSchedulerStats(scheduler *cron.Scheduler) {
 	fmt.Printf("❌ Failed Executions: %d\n", stats.FailedExecutions)
 	fmt.Printf("⏱️  Average Execution Time: %v\n", stats.AverageExecutionTime)
 	fmt.Printf("⏰ Uptime: %v\n", stats.Uptime)
-	
+
 	if stats.SuccessfulExecutions+stats.FailedExecutions > 0 {
 		successRate := float64(stats.SuccessfulExecutions) / float64(stats.SuccessfulExecutions+stats.FailedExecutions) * 100
 		fmt.Printf("📊 Success Rate: %.1f%%\n", successRate)
