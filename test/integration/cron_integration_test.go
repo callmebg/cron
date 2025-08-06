@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -144,9 +145,9 @@ func TestCronWithContext(t *testing.T) {
 
 		scheduler := cron.New()
 
-		var executed bool
+		var executed int32
 		err := scheduler.AddJob("*/1 * * * * *", func() {
-			executed = true
+			atomic.StoreInt32(&executed, 1)
 		})
 		if err != nil {
 			t.Fatalf("Failed to add job: %v", err)
@@ -158,7 +159,7 @@ func TestCronWithContext(t *testing.T) {
 		<-ctx.Done()
 		scheduler.Stop()
 
-		if !executed {
+		if atomic.LoadInt32(&executed) == 0 {
 			t.Error("Job should have executed at least once before context cancellation")
 		}
 	})

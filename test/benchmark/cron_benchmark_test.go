@@ -17,11 +17,11 @@ func BenchmarkCronParsing(b *testing.B) {
 		"0 30 9-17 * * 1-5",
 		"0 0,12 1 */2 * *",
 		"0 0 0 1 1 *",
-		"0 0 * * * *",   // @hourly equivalent
-		"0 0 0 * * *",   // @daily equivalent  
-		"0 0 0 * * 0",   // @weekly equivalent
-		"0 0 0 1 * *",   // @monthly equivalent
-		"0 0 0 1 1 *",   // @yearly equivalent
+		"0 0 * * * *", // @hourly equivalent
+		"0 0 0 * * *", // @daily equivalent
+		"0 0 0 * * 0", // @weekly equivalent
+		"0 0 0 1 * *", // @monthly equivalent
+		"0 0 0 1 1 *", // @yearly equivalent
 	}
 
 	b.ResetTimer()

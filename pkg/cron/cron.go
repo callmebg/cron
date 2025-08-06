@@ -313,7 +313,7 @@ func (s *Scheduler) executeJob(ctx context.Context, job *scheduler.Job) {
 func (s *Scheduler) countRunningJobs() int {
 	count := 0
 	for _, job := range s.jobs {
-		if job.IsRunning {
+		if job.IsJobRunning() {
 			count++
 		}
 	}
@@ -324,7 +324,8 @@ func (s *Scheduler) countRunningJobs() int {
 func (s *Scheduler) calculateTotalExecutionTime() time.Duration {
 	var total time.Duration
 	for _, job := range s.jobs {
-		total += job.LastDuration * time.Duration(job.RunCount)
+		lastDuration, runCount := job.GetJobStats()
+		total += lastDuration * time.Duration(runCount)
 	}
 	return total
 }

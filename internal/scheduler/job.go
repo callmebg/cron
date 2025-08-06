@@ -154,6 +154,20 @@ func (j *Job) MarkCompleted(duration time.Duration, success bool) {
 	j.NextExecution = j.Schedule.Next(j.LastExecution)
 }
 
+// IsJobRunning returns whether the job is currently running (thread-safe)
+func (j *Job) IsJobRunning() bool {
+	j.mu.RLock()
+	defer j.mu.RUnlock()
+	return j.IsRunning
+}
+
+// GetJobStats returns job statistics (thread-safe)
+func (j *Job) GetJobStats() (time.Duration, int64) {
+	j.mu.RLock()
+	defer j.mu.RUnlock()
+	return j.LastDuration, j.RunCount
+}
+
 // Execute runs the job function
 func (j *Job) Execute(ctx context.Context) error {
 	start := time.Now()
