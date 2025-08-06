@@ -47,7 +47,7 @@ func TestNewJobWithError(t *testing.T) {
 		return nil
 	}
 
-	errorHandler := func(err error) {
+	errorHandler := func(_ error) {
 		// Handle error
 	}
 
@@ -250,7 +250,7 @@ func TestJobExecuteWithError(t *testing.T) {
 		return testError
 	}
 
-	errorHandler := func(err error) {
+	errorHandler := func(_ error) {
 		errorHandled = true
 		if err != testError {
 			t.Errorf("Error handler received %v; want %v", err, testError)
@@ -352,7 +352,7 @@ func TestJobExecuteWithRetry(t *testing.T) {
 		return nil // Succeed on 3rd attempt
 	}
 
-	errorHandler := func(err error) {
+	errorHandler := func(_ error) {
 		// Handle error
 	}
 
@@ -481,7 +481,7 @@ func FuzzJobWithError(f *testing.F) {
 			}
 		}
 
-		errorHandler = func(err error) {
+		errorHandler = func(_ error) {
 			// Handle error - should not crash
 		}
 

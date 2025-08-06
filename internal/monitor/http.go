@@ -259,7 +259,7 @@ func (h *HTTPMonitor) handleSchedule(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleIndex returns a simple HTML interface
-func (h *HTTPMonitor) handleIndex(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPMonitor) handleIndex(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	html := `
