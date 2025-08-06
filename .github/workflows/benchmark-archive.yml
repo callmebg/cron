@@ -1,0 +1,79 @@
+name: Benchmark Archive (Optional)
+
+on:
+  workflow_dispatch:  # Manual trigger only
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly on Sunday at 2 AM UTC
+
+env:
+  GO_VERSION: '1.24'
+
+jobs:
+  benchmark-archive:
+    name: Archive Benchmark Results
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Run comprehensive benchmarks
+      run: |
+        echo "Running comprehensive benchmark suite..."
+        mkdir -p benchmark-results
+        
+        # Run all benchmarks and save results
+        go test -bench=. -benchmem -benchtime=10s ./test/benchmark/ | tee benchmark-results/benchmark-$(date +%Y%m%d-%H%M%S).txt
+        
+        # Create summary
+        echo "# Benchmark Results - $(date)" > benchmark-results/README.md
+        echo "" >> benchmark-results/README.md
+        echo "Generated on: $(date)" >> benchmark-results/README.md
+        echo "Go version: $(go version)" >> benchmark-results/README.md
+        echo "System: $(uname -a)" >> benchmark-results/README.md
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results-${{ github.run_number }}
+        path: benchmark-results/
+        retention-days: 90
+
+    - name: Comment on latest commit
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Read benchmark results
+          const resultsDir = 'benchmark-results';
+          const files = fs.readdirSync(resultsDir).filter(f => f.endsWith('.txt'));
+          
+          if (files.length > 0) {
+            const latestFile = files[files.length - 1];
+            const results = fs.readFileSync(path.join(resultsDir, latestFile), 'utf8');
+            
+            const body = `## 📊 Weekly Benchmark Results
+            
+**Generated**: ${new Date().toISOString()}
+**Artifact**: benchmark-results-${{ github.run_number }}
+
+\`\`\`
+${results.split('\n').slice(-20).join('\n')}
+\`\`\`
+
+Full results available in the workflow artifacts.`;
+
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: body
+            });
+          }

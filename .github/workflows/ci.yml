@@ -69,17 +69,10 @@ jobs:
 
     - name: Run benchmarks
       if: matrix.go-version == '1.24'
-      run: go test -run=none -bench=BenchmarkCronParsing -benchmem -benchtime=1s ./test/benchmark/ | tee benchmark.txt
-
-    - name: Store benchmark result
-      if: matrix.go-version == '1.24'
-      uses: benchmark-action/github-action-benchmark@v1
-      with:
-        name: Go Benchmark
-        tool: 'go'
-        output-file-path: benchmark.txt
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        auto-push: true
+      run: |
+        echo "Running benchmark tests..."
+        go test -run=none -bench=BenchmarkCronParsing -benchmem -benchtime=1s ./test/benchmark/
+        echo "Benchmark completed successfully!"
 
   lint:
     name: Lint
